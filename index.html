@@ -47,6 +47,7 @@
       width: 220px;
       text-align: center;
       transition: transform 0.2s;
+      position: relative;
     }
     .polaroid:hover {
       transform: scale(1.05);
@@ -58,8 +59,22 @@
     }
     .description {
       margin-top: 8px;
-      font-size: 0.95em;
+      font-size: 1em;
       color: #444;
+      word-wrap: break-word;
+    }
+    .delete-btn {
+      margin-top: 8px;
+      padding: 5px 10px;
+      background-color: #d9534f;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9em;
+    }
+    .delete-btn:hover {
+      background-color: #c9302c;
     }
   </style>
 </head>
@@ -80,7 +95,7 @@
     const CLOUD_NAME = "dbfwu9sdz";
     const UPLOAD_PRESET = "polaroid";
 
-    // Cria o cliente Supabase e armazena em 'supabaseClient'
+    // Cria o cliente Supabase e armazena em supabaseClient
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     // Função para upload da imagem
@@ -97,26 +112,45 @@
       formData.append("file", file);
       formData.append("upload_preset", UPLOAD_PRESET);
 
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-        method: "POST",
-        body: formData
-      });
+      try {
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        const imageUrl = data.secure_url;
 
-      const data = await res.json();
-      const imageUrl = data.secure_url;
+        if (!imageUrl) {
+          console.error("Erro no upload, resposta:", data);
+          alert("Erro no upload da imagem.");
+          return;
+        }
 
-      await supabaseClient.from("fotos").insert([{ url: imageUrl, descricao: description }]);
+        // Insere a imagem e a descrição no Supabase
+        const { error } = await supabaseClient.from("fotos").insert([{ url: imageUrl, descricao: description }]);
+        if (error) {
+          console.error("Erro ao inserir no banco:", error);
+          alert("Erro ao salvar a imagem no banco.");
+          return;
+        }
 
-      // Limpa os inputs
-      document.getElementById("fileInput").value = "";
-      document.getElementById("descInput").value = "";
+        // Limpa os inputs
+        document.getElementById("fileInput").value = "";
+        document.getElementById("descInput").value = "";
 
-      loadGallery();
+        loadGallery();
+      } catch (err) {
+        console.error("Erro no upload:", err);
+        alert("Erro no upload da imagem.");
+      }
     }
 
     // Função para carregar a galeria de fotos
     async function loadGallery() {
-      const { data, error } = await supabaseClient.from("fotos").select("*").order("id", { ascending: false });
+      const { data, error } = await supabaseClient
+        .from("fotos")
+        .select("*")
+        .order("id", { ascending: false });
       const gallery = document.getElementById("gallery");
       gallery.innerHTML = "";
 
@@ -131,9 +165,24 @@
         div.innerHTML = `
           <img src="${item.url}" alt="Foto Polaroid">
           <div class="description">${item.descricao || ""}</div>
+          <button class="delete-btn" onclick="deleteImage('${item.id}')">Apagar</button>
         `;
         gallery.appendChild(div);
       });
+    }
+
+    // Função para apagar imagem (deleta o registro do Supabase)
+    async function deleteImage(id) {
+      const { error } = await supabaseClient
+        .from("fotos")
+        .delete()
+        .eq("id", id);
+      if (error) {
+        console.error("Erro ao apagar imagem:", error);
+        alert("Erro ao apagar imagem.");
+        return;
+      }
+      loadGallery();
     }
 
     // Chamada inicial para carregar a galeria
