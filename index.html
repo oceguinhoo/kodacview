@@ -5,42 +5,61 @@
   <title>Polaroid Web</title>
   <style>
     body {
-      font-family: 'Arial', sans-serif;
-      background: #f0f0f0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #fafafa;
       margin: 0;
       padding: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
+
     h1 {
-      background: #fff;
+      background: linear-gradient(to right, #ff6a00, #ee0979);
+      color: white;
       width: 100%;
       text-align: center;
       padding: 20px 0;
       margin: 0;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      font-size: 2em;
     }
+
     input[type="file"] {
       margin: 20px 0;
+      padding: 10px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 5px;
     }
+
     #gallery {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 20px;
+      gap: 25px;
       padding: 20px;
+      max-width: 1200px;
     }
+
     .polaroid {
       background: white;
-      padding: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      width: 200px;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+      width: 220px;
       text-align: center;
+      transition: transform 0.2s;
     }
+
+    .polaroid:hover {
+      transform: scale(1.05);
+    }
+
     .polaroid img {
       width: 100%;
       height: auto;
+      border-radius: 8px;
     }
   </style>
 </head>
@@ -49,6 +68,7 @@
   <input type="file" accept="image/*" onchange="uploadImage(event)">
   <div id="gallery"></div>
 
+  <!-- Biblioteca do Supabase (IMPORTANTE: vir antes do uso) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
     const SUPABASE_URL = "https://qewcnffjcrtqwutjymfd.supabase.co";
@@ -74,7 +94,6 @@
       const data = await res.json();
       const imageUrl = data.secure_url;
 
-      // Salva no Supabase
       await supabase.from("fotos").insert([{ url: imageUrl }]);
       loadGallery();
     }
@@ -83,6 +102,12 @@
       const { data, error } = await supabase.from("fotos").select("*").order("id", { ascending: false });
       const gallery = document.getElementById("gallery");
       gallery.innerHTML = "";
+
+      if (error) {
+        console.error("Erro ao carregar galeria:", error.message);
+        return;
+      }
+
       data.forEach(item => {
         const div = document.createElement("div");
         div.className = "polaroid";
