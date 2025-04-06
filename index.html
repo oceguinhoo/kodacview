@@ -70,53 +70,53 @@
 
   <!-- Biblioteca do Supabase (IMPORTANTE: vir antes do uso) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-  <script>
-    const SUPABASE_URL = "https://qewcnffjcrtqwutjymfd.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8";
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+<script>
+  const SUPABASE_URL = "https://qewcnffjcrtqwutjymfd.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8";
+  const CLOUD_NAME = "dbfwu9sdz";
+  const UPLOAD_PRESET = "polaroid";
 
-    const CLOUD_NAME = "dbfwu9sdz";
-    const UPLOAD_PRESET = "polaroid";
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    async function uploadImage(event) {
-      const file = event.target.files[0];
-      if (!file) return;
+  async function uploadImage(event) {
+    const file = event.target.files[0];
+    if (!file) return;
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("upload_preset", UPLOAD_PRESET);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", UPLOAD_PRESET);
 
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-        method: "POST",
-        body: formData
-      });
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+      method: "POST",
+      body: formData
+    });
 
-      const data = await res.json();
-      const imageUrl = data.secure_url;
+    const data = await res.json();
+    const imageUrl = data.secure_url;
 
-      await supabase.from("fotos").insert([{ url: imageUrl }]);
-      loadGallery();
-    }
-
-    async function loadGallery() {
-      const { data, error } = await supabase.from("fotos").select("*").order("id", { ascending: false });
-      const gallery = document.getElementById("gallery");
-      gallery.innerHTML = "";
-
-      if (error) {
-        console.error("Erro ao carregar galeria:", error.message);
-        return;
-      }
-
-      data.forEach(item => {
-        const div = document.createElement("div");
-        div.className = "polaroid";
-        div.innerHTML = `<img src="${item.url}" alt="Foto Polaroid">`;
-        gallery.appendChild(div);
-      });
-    }
-
+    await supabase.from("fotos").insert([{ url: imageUrl }]);
     loadGallery();
-  </script>
+  }
+
+  async function loadGallery() {
+    const { data, error } = await supabase.from("fotos").select("*").order("id", { ascending: false });
+    const gallery = document.getElementById("gallery");
+    gallery.innerHTML = "";
+
+    if (error) {
+      console.error("Erro ao carregar galeria:", error.message);
+      return;
+    }
+
+    data.forEach(item => {
+      const div = document.createElement("div");
+      div.className = "polaroid";
+      div.innerHTML = `<img src="${item.url}" alt="Foto Polaroid">`;
+      gallery.appendChild(div);
+    });
+  }
+
+  loadGallery();
+</script>
 </body>
 </html>
