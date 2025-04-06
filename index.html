@@ -69,18 +69,26 @@
   <div id="gallery"></div>
 
   <!-- Biblioteca do Supabase (IMPORTANTE: vir antes do uso) -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<!-- Inclua esse script no final do <body>, com a ordem correta -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script>
   const SUPABASE_URL = "https://qewcnffjcrtqwutjymfd.supabase.co";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8";
   const CLOUD_NAME = "dbfwu9sdz";
   const UPLOAD_PRESET = "polaroid";
 
+  // Inicializa o Supabase
   const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  async function uploadImage(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+  // Upload da imagem
+  async function uploadImage() {
+    const file = document.getElementById("fileInput").files[0];
+    const description = document.getElementById("descInput").value.trim();
+
+    if (!file) {
+      alert("Selecione uma imagem.");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("file", file);
@@ -94,10 +102,15 @@
     const data = await res.json();
     const imageUrl = data.secure_url;
 
-    await supabase.from("fotos").insert([{ url: imageUrl }]);
+    await supabase.from("fotos").insert([{ url: imageUrl, descricao: description }]);
+
+    document.getElementById("fileInput").value = "";
+    document.getElementById("descInput").value = "";
+
     loadGallery();
   }
 
+  // Carrega as fotos da galeria
   async function loadGallery() {
     const { data, error } = await supabase.from("fotos").select("*").order("id", { ascending: false });
     const gallery = document.getElementById("gallery");
@@ -111,10 +124,17 @@
     data.forEach(item => {
       const div = document.createElement("div");
       div.className = "polaroid";
-      div.innerHTML = `<img src="${item.url}" alt="Foto Polaroid">`;
+      div.innerHTML = `
+        <img src="${item.url}" alt="Foto Polaroid">
+        <div class="description">${item.descricao || ""}</div>
+      `;
       gallery.appendChild(div);
     });
   }
+
+  // Chamada inicial
+  loadGallery();
+</script>
 
   loadGallery();
 </script>
