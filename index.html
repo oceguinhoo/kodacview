@@ -13,7 +13,6 @@
       flex-direction: column;
       align-items: center;
     }
-
     h1 {
       background: linear-gradient(to right, #ff6a00, #ee0979);
       color: white;
@@ -24,18 +23,15 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
       font-size: 2em;
     }
-
     .controls {
       margin: 20px;
     }
-
     input, button {
       padding: 10px;
       margin: 5px;
       border-radius: 5px;
       border: 1px solid #ccc;
     }
-
     #gallery {
       display: flex;
       flex-wrap: wrap;
@@ -44,7 +40,6 @@
       padding: 20px;
       max-width: 1200px;
     }
-
     .polaroid {
       background: white;
       padding: 12px;
@@ -55,22 +50,18 @@
       transition: transform 0.2s;
       position: relative;
     }
-
     .polaroid:hover {
       transform: scale(1.05);
     }
-
     .polaroid img {
       width: 100%;
       height: auto;
       border-radius: 8px;
     }
-
     .description {
       margin-top: 10px;
       font-size: 0.9em;
     }
-
     .delete-btn {
       position: absolute;
       top: 8px;
@@ -93,15 +84,15 @@
   </div>
   <div id="gallery"></div>
 
-  <!-- Carrega Supabase corretamente -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
     const SUPABASE_URL = "https://qewcnffjcrtqwutjymfd.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
     const CLOUD_NAME = "dbfwu9sdz";
     const UPLOAD_PRESET = "polaroid";
 
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function uploadImage() {
       const file = document.getElementById("fileInput").files[0];
@@ -124,7 +115,7 @@
       const data = await res.json();
       const imageUrl = data.secure_url;
 
-      await supabase.from("fotos").insert([{ url: imageUrl, descricao: description }]);
+      await supabaseClient.from("fotos").insert([{ url: imageUrl, descricao: description }]);
 
       document.getElementById("fileInput").value = "";
       document.getElementById("descInput").value = "";
@@ -135,13 +126,13 @@
     async function deleteImage(id) {
       const confirmDelete = confirm("Deseja realmente excluir esta imagem?");
       if (confirmDelete) {
-        await supabase.from("fotos").delete().eq("id", id);
+        await supabaseClient.from("fotos").delete().eq("id", id);
         loadGallery();
       }
     }
 
     async function loadGallery() {
-      const { data, error } = await supabase.from("fotos").select("*").order("id", { ascending: false });
+      const { data, error } = await supabaseClient.from("fotos").select("*").order("id", { ascending: false });
       const gallery = document.getElementById("gallery");
       gallery.innerHTML = "";
 
