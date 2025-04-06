@@ -71,7 +71,7 @@
   <input type="text" id="descInput" placeholder="Descrição da foto">
   <div id="gallery"></div>
 
-  <!-- Biblioteca do Supabase: IMPORTANTE vir antes do nosso código -->
+  <!-- Biblioteca do Supabase deve ser carregada antes do nosso script -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
     // Dados do Supabase e Cloudinary
@@ -105,7 +105,6 @@
       const data = await res.json();
       const imageUrl = data.secure_url;
 
-      // Insere a imagem e a descrição no banco Supabase
       await supabaseClient.from("fotos").insert([{ url: imageUrl, descricao: description }]);
 
       // Limpa os inputs
