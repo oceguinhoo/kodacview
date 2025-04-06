@@ -190,7 +190,6 @@
       nextPhotos.forEach(item => {
         const div = document.createElement("div");
         div.className = "polaroid";
-        div.style.width = getRandomSize();
         div.innerHTML = `
           <button class="delete-btn" onclick="deleteImage(${item.id})">X</button>
           <img src="${item.url}" alt="Foto Polaroid">
