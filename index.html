@@ -1,19 +1,97 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Álbum Polaroid</title>
-    <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <title>Polaroid Web</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      background: #fff;
+      width: 100%;
+      text-align: center;
+      padding: 20px 0;
+      margin: 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    input[type="file"] {
+      margin: 20px 0;
+    }
+    #gallery {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px;
+    }
+    .polaroid {
+      background: white;
+      padding: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      width: 200px;
+      text-align: center;
+    }
+    .polaroid img {
+      width: 100%;
+      height: auto;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Álbum Polaroid</h1>
-        <input type="file" id="fileInput" accept="image/*">
-        <button onclick="uploadImage()">Enviar Foto</button>
-        <div class="gallery" id="gallery"></div>
-    </div>
+  <h1>Polaroid Web</h1>
+  <input type="file" accept="image/*" onchange="uploadImage(event)">
+  <div id="gallery"></div>
 
-    <script src="script.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script>
+    const SUPABASE_URL = "https://qewcnffjcrtqwutjymfd.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8";
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const CLOUD_NAME = "dbfwu9sdz";
+    const UPLOAD_PRESET = "polaroid";
+
+    async function uploadImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", UPLOAD_PRESET);
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+      const imageUrl = data.secure_url;
+
+      // Salva no Supabase
+      await supabase.from("fotos").insert([{ url: imageUrl }]);
+      loadGallery();
+    }
+
+    async function loadGallery() {
+      const { data, error } = await supabase.from("fotos").select("*").order("id", { ascending: false });
+      const gallery = document.getElementById("gallery");
+      gallery.innerHTML = "";
+      data.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "polaroid";
+        div.innerHTML = `<img src="${item.url}" alt="Foto Polaroid">`;
+        gallery.appendChild(div);
+      });
+    }
+
+    loadGallery();
+  </script>
 </body>
 </html>
