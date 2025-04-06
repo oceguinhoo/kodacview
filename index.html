@@ -13,6 +13,7 @@
       flex-direction: column;
       align-items: center;
     }
+
     h1 {
       background: linear-gradient(to right, #ff6a00, #ee0979);
       color: white;
@@ -23,14 +24,31 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
       font-size: 2em;
     }
+
+    .form-container {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
     input[type="file"],
-    input[type="text"] {
-      margin: 20px 0;
+    input[type="text"],
+    button {
       padding: 10px;
-      background: white;
       border: 1px solid #ddd;
       border-radius: 5px;
+      width: 300px;
     }
+
+    button {
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
     #gallery {
       display: flex;
       flex-wrap: wrap;
@@ -39,6 +57,7 @@
       padding: 20px;
       max-width: 1200px;
     }
+
     .polaroid {
       background: white;
       padding: 12px;
@@ -47,58 +66,54 @@
       width: 220px;
       text-align: center;
       transition: transform 0.2s;
-      position: relative;
     }
+
     .polaroid:hover {
       transform: scale(1.05);
     }
+
     .polaroid img {
       width: 100%;
       height: auto;
       border-radius: 8px;
     }
+
     .description {
       margin-top: 8px;
-      font-size: 1em;
-      color: #444;
-      word-wrap: break-word;
+      font-size: 14px;
     }
+
     .delete-btn {
-      margin-top: 8px;
-      padding: 5px 10px;
-      background-color: #d9534f;
+      margin-top: 10px;
+      background: #f44336;
       color: white;
       border: none;
+      padding: 6px 10px;
       border-radius: 4px;
       cursor: pointer;
-      font-size: 0.9em;
-    }
-    .delete-btn:hover {
-      background-color: #c9302c;
     }
   </style>
 </head>
 <body>
   <h1>Polaroid Web</h1>
-  <!-- Input para escolher a imagem -->
-  <input type="file" id="fileInput" accept="image/*" onchange="uploadImage()">
-  <!-- Input para a descrição da foto -->
-  <input type="text" id="descInput" placeholder="Descrição da foto">
+
+  <div class="form-container">
+    <input type="file" id="fileInput" accept="image/*">
+    <input type="text" id="descInput" placeholder="Descrição da imagem...">
+    <button onclick="uploadImage()">Enviar Foto</button>
+  </div>
+
   <div id="gallery"></div>
 
-  <!-- Biblioteca do Supabase deve ser carregada antes do nosso script -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
-    // Dados do Supabase e Cloudinary
     const SUPABASE_URL = "https://qewcnffjcrtqwutjymfd.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8";
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
     const CLOUD_NAME = "dbfwu9sdz";
     const UPLOAD_PRESET = "polaroid";
 
-    // Cria o cliente Supabase e armazena em supabaseClient
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    // Função para upload da imagem
     async function uploadImage() {
       const file = document.getElementById("fileInput").files[0];
       const description = document.getElementById("descInput").value.trim();
@@ -112,45 +127,24 @@
       formData.append("file", file);
       formData.append("upload_preset", UPLOAD_PRESET);
 
-      try {
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-          method: "POST",
-          body: formData
-        });
-        const data = await res.json();
-        const imageUrl = data.secure_url;
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+        method: "POST",
+        body: formData
+      });
 
-        if (!imageUrl) {
-          console.error("Erro no upload, resposta:", data);
-          alert("Erro no upload da imagem.");
-          return;
-        }
+      const data = await res.json();
+      const imageUrl = data.secure_url;
 
-        // Insere a imagem e a descrição no Supabase
-        const { error } = await supabaseClient.from("fotos").insert([{ url: imageUrl, descricao: description }]);
-        if (error) {
-          console.error("Erro ao inserir no banco:", error);
-          alert("Erro ao salvar a imagem no banco.");
-          return;
-        }
+      await supabase.from("fotos").insert([{ url: imageUrl, descricao: description }]);
 
-        // Limpa os inputs
-        document.getElementById("fileInput").value = "";
-        document.getElementById("descInput").value = "";
+      document.getElementById("fileInput").value = "";
+      document.getElementById("descInput").value = "";
 
-        loadGallery();
-      } catch (err) {
-        console.error("Erro no upload:", err);
-        alert("Erro no upload da imagem.");
-      }
+      loadGallery();
     }
 
-    // Função para carregar a galeria de fotos
     async function loadGallery() {
-      const { data, error } = await supabaseClient
-        .from("fotos")
-        .select("*")
-        .order("id", { ascending: false });
+      const { data, error } = await supabase.from("fotos").select("*").order("id", { ascending: false });
       const gallery = document.getElementById("gallery");
       gallery.innerHTML = "";
 
@@ -165,27 +159,25 @@
         div.innerHTML = `
           <img src="${item.url}" alt="Foto Polaroid">
           <div class="description">${item.descricao || ""}</div>
-          <button class="delete-btn" onclick="deleteImage('${item.id}')">Apagar</button>
+          <button class="delete-btn" onclick="deleteImage(${item.id})">Excluir</button>
         `;
         gallery.appendChild(div);
       });
     }
 
-    // Função para apagar imagem (deleta o registro do Supabase)
     async function deleteImage(id) {
-      const { error } = await supabaseClient
-        .from("fotos")
-        .delete()
-        .eq("id", id);
+      const confirmDelete = confirm("Deseja excluir esta imagem?");
+      if (!confirmDelete) return;
+
+      const { error } = await supabase.from("fotos").delete().eq("id", id);
       if (error) {
-        console.error("Erro ao apagar imagem:", error);
-        alert("Erro ao apagar imagem.");
-        return;
+        alert("Erro ao excluir imagem.");
+        console.error(error);
+      } else {
+        loadGallery();
       }
-      loadGallery();
     }
 
-    // Chamada inicial para carregar a galeria
     loadGallery();
   </script>
 </body>
