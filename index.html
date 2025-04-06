@@ -4,7 +4,84 @@
   <meta charset="UTF-8">
   <title>Polaroid Web</title>
   <style>
-    /* ... [seu CSS permanece o mesmo, não alterei nada visual] ... */
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #fafafa;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      background: linear-gradient(to right, #ff6a00, #ee0979);
+      color: white;
+      width: 100%;
+      text-align: center;
+      padding: 20px 0;
+      margin: 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      font-size: 2em;
+    }
+
+    .controls {
+      margin: 20px;
+    }
+
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    #gallery {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 25px;
+      padding: 20px;
+      max-width: 1200px;
+    }
+
+    .polaroid {
+      background: white;
+      padding: 12px;
+      border-radius: 10px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+      width: 220px;
+      text-align: center;
+      transition: transform 0.2s;
+      position: relative;
+    }
+
+    .polaroid:hover {
+      transform: scale(1.05);
+    }
+
+    .polaroid img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+    }
+
+    .description {
+      margin-top: 10px;
+      font-size: 0.9em;
+    }
+
+    .delete-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 5px;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -16,7 +93,7 @@
   </div>
   <div id="gallery"></div>
 
-  <!-- Importa a biblioteca do Supabase -->
+  <!-- Carrega Supabase corretamente -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = "https://qewcnffjcrtqwutjymfd.supabase.co";
@@ -24,13 +101,16 @@
     const CLOUD_NAME = "dbfwu9sdz";
     const UPLOAD_PRESET = "polaroid";
 
-    const supabase = supabasejs.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     async function uploadImage() {
       const file = document.getElementById("fileInput").files[0];
       const description = document.getElementById("descInput").value.trim();
 
-      if (!file) return alert("Selecione uma imagem.");
+      if (!file) {
+        alert("Selecione uma imagem.");
+        return;
+      }
 
       const formData = new FormData();
       formData.append("file", file);
@@ -44,7 +124,7 @@
       const data = await res.json();
       const imageUrl = data.secure_url;
 
-      await supabase.from("fotos").insert([{ url: imageUrl, descricao: description || null }]);
+      await supabase.from("fotos").insert([{ url: imageUrl, descricao: description }]);
 
       document.getElementById("fileInput").value = "";
       document.getElementById("descInput").value = "";
@@ -53,7 +133,8 @@
     }
 
     async function deleteImage(id) {
-      if (confirm("Deseja realmente excluir esta imagem?")) {
+      const confirmDelete = confirm("Deseja realmente excluir esta imagem?");
+      if (confirmDelete) {
         await supabase.from("fotos").delete().eq("id", id);
         loadGallery();
       }
@@ -64,7 +145,10 @@
       const gallery = document.getElementById("gallery");
       gallery.innerHTML = "";
 
-      if (error) return console.error("Erro ao carregar galeria:", error.message);
+      if (error) {
+        console.error("Erro ao carregar galeria:", error.message);
+        return;
+      }
 
       data.forEach(item => {
         const div = document.createElement("div");
