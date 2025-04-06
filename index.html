@@ -13,7 +13,6 @@
       flex-direction: column;
       align-items: center;
     }
-
     h1 {
       background: linear-gradient(to right, #ff6a00, #ee0979);
       color: white;
@@ -24,15 +23,14 @@
       box-shadow: 0 2px 4px rgba(0,0,0,0.2);
       font-size: 2em;
     }
-
-    input[type="file"] {
+    input[type="file"],
+    input[type="text"] {
       margin: 20px 0;
       padding: 10px;
       background: white;
       border: 1px solid #ddd;
       border-radius: 5px;
     }
-
     #gallery {
       display: flex;
       flex-wrap: wrap;
@@ -41,7 +39,6 @@
       padding: 20px;
       max-width: 1200px;
     }
-
     .polaroid {
       background: white;
       padding: 12px;
@@ -51,92 +48,97 @@
       text-align: center;
       transition: transform 0.2s;
     }
-
     .polaroid:hover {
       transform: scale(1.05);
     }
-
     .polaroid img {
       width: 100%;
       height: auto;
       border-radius: 8px;
     }
+    .description {
+      margin-top: 8px;
+      font-size: 0.95em;
+      color: #444;
+    }
   </style>
 </head>
 <body>
   <h1>Polaroid Web</h1>
-  <input type="file" accept="image/*" onchange="uploadImage(event)">
+  <!-- Input para escolher a imagem -->
+  <input type="file" id="fileInput" accept="image/*" onchange="uploadImage()">
+  <!-- Input para a descrição da foto -->
+  <input type="text" id="descInput" placeholder="Descrição da foto">
   <div id="gallery"></div>
 
-  <!-- Biblioteca do Supabase (IMPORTANTE: vir antes do uso) -->
-<!-- Inclua esse script no final do <body>, com a ordem correta -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-<script>
-  const SUPABASE_URL = "https://qewcnffjcrtqwutjymfd.supabase.co";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8";
-  const CLOUD_NAME = "dbfwu9sdz";
-  const UPLOAD_PRESET = "polaroid";
+  <!-- Biblioteca do Supabase: IMPORTANTE vir antes do nosso código -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script>
+    // Dados do Supabase e Cloudinary
+    const SUPABASE_URL = "https://qewcnffjcrtqwutjymfd.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8";
+    const CLOUD_NAME = "dbfwu9sdz";
+    const UPLOAD_PRESET = "polaroid";
 
-  // Inicializa o Supabase
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Cria o cliente Supabase e armazena em 'supabaseClient'
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // Upload da imagem
-  async function uploadImage() {
-    const file = document.getElementById("fileInput").files[0];
-    const description = document.getElementById("descInput").value.trim();
+    // Função para upload da imagem
+    async function uploadImage() {
+      const file = document.getElementById("fileInput").files[0];
+      const description = document.getElementById("descInput").value.trim();
 
-    if (!file) {
-      alert("Selecione uma imagem.");
-      return;
+      if (!file) {
+        alert("Selecione uma imagem.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", UPLOAD_PRESET);
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+        method: "POST",
+        body: formData
+      });
+
+      const data = await res.json();
+      const imageUrl = data.secure_url;
+
+      // Insere a imagem e a descrição no banco Supabase
+      await supabaseClient.from("fotos").insert([{ url: imageUrl, descricao: description }]);
+
+      // Limpa os inputs
+      document.getElementById("fileInput").value = "";
+      document.getElementById("descInput").value = "";
+
+      loadGallery();
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", UPLOAD_PRESET);
+    // Função para carregar a galeria de fotos
+    async function loadGallery() {
+      const { data, error } = await supabaseClient.from("fotos").select("*").order("id", { ascending: false });
+      const gallery = document.getElementById("gallery");
+      gallery.innerHTML = "";
 
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-      method: "POST",
-      body: formData
-    });
+      if (error) {
+        console.error("Erro ao carregar galeria:", error.message);
+        return;
+      }
 
-    const data = await res.json();
-    const imageUrl = data.secure_url;
+      data.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "polaroid";
+        div.innerHTML = `
+          <img src="${item.url}" alt="Foto Polaroid">
+          <div class="description">${item.descricao || ""}</div>
+        `;
+        gallery.appendChild(div);
+      });
+    }
 
-    await supabase.from("fotos").insert([{ url: imageUrl, descricao: description }]);
-
-    document.getElementById("fileInput").value = "";
-    document.getElementById("descInput").value = "";
-
+    // Chamada inicial para carregar a galeria
     loadGallery();
-  }
-
-  // Carrega as fotos da galeria
-  async function loadGallery() {
-    const { data, error } = await supabase.from("fotos").select("*").order("id", { ascending: false });
-    const gallery = document.getElementById("gallery");
-    gallery.innerHTML = "";
-
-    if (error) {
-      console.error("Erro ao carregar galeria:", error.message);
-      return;
-    }
-
-    data.forEach(item => {
-      const div = document.createElement("div");
-      div.className = "polaroid";
-      div.innerHTML = `
-        <img src="${item.url}" alt="Foto Polaroid">
-        <div class="description">${item.descricao || ""}</div>
-      `;
-      gallery.appendChild(div);
-    });
-  }
-
-  // Chamada inicial
-  loadGallery();
-</script>
-
-  loadGallery();
-</script>
+  </script>
 </body>
 </html>
