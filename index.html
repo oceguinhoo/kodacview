@@ -1,26 +1,29 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>KodakMemories</title>
+  <meta charset="UTF-8" />
+  <title>KodacMemories</title>
+  <link rel="icon" type="image/png" href="favicon.png">
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #fdfaf5;
+      background: #fdf8f2;
       margin: 0;
       padding: 0;
-      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
-
     h1 {
-      background: #d74e26;
+      background: linear-gradient(to right, #ff6a00, #ee0979);
       color: white;
-      padding: 15px;
+      width: 100%;
+      text-align: center;
+      padding: 20px 0;
       margin: 0;
-      font-size: 2rem;
+      font-size: 2em;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-
     .auth, .upload {
       margin: 20px auto;
       max-width: 400px;
@@ -29,23 +32,22 @@
       border: 1px solid #ddd;
       border-radius: 10px;
     }
-
     input, button {
       padding: 10px;
       margin: 5px 0;
       width: 100%;
       border-radius: 5px;
       border: 1px solid #ccc;
+      font-size: 1em;
     }
-
     #gallery {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 20px;
       padding: 20px;
+      max-width: 1200px;
     }
-
     .polaroid {
       background: white;
       padding: 10px;
@@ -53,158 +55,245 @@
       width: 220px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       position: relative;
+      text-align: center;
     }
-
     .polaroid img {
       width: 100%;
-      border-radius: 6px;
+      border-radius: 4px;
+      display: block;
     }
-
     .username {
       font-weight: bold;
-      font-size: 0.9em;
       margin-bottom: 5px;
     }
-
     .description {
-      font-size: 0.85em;
-      margin-top: 6px;
+      font-size: 0.9em;
+      margin-top: 5px;
     }
-
     .delete-btn {
       position: absolute;
-      top: 8px;
-      right: 8px;
+      top: 5px;
+      right: 5px;
       background: red;
       color: white;
       border: none;
-      padding: 4px 6px;
+      border-radius: 4px;
+      padding: 4px;
       cursor: pointer;
       font-size: 0.8em;
-      border-radius: 4px;
     }
   </style>
 </head>
 <body>
-  <h1>KodakMemories</h1>
+  <h1>KodacMemories</h1>
 
-  <div class="auth">
+  <!-- Área de Autenticação -->
+  <div class="auth" id="authSection">
     <h3>Entrar / Cadastrar</h3>
-    <input type="text" id="username" placeholder="Nome de usuário">
-    <input type="password" id="password" placeholder="Senha">
-    <button onclick="login()">Entrar</button>
-    <button onclick="signup()">Cadastrar</button>
+    <!-- Usamos apenas nome de usuário e senha -->
+    <input type="text" id="authUsername" placeholder="Nome de usuário">
+    <input type="password" id="authPassword" placeholder="Senha">
+    <button onclick="signUp()">Cadastrar</button>
+    <button onclick="signIn()">Entrar</button>
+    <button onclick="signOut()">Sair</button>
   </div>
 
-  <div class="upload" style="display:none;">
+  <!-- Área de Upload (visível somente se logado) -->
+  <div class="upload" id="uploadSection" style="display:none;">
     <h3>Enviar nova foto</h3>
     <input type="file" id="fileInput" accept="image/*">
-    <input type="text" id="descInput" placeholder="Descrição">
+    <input type="text" id="descInput" placeholder="Descrição da foto">
     <button onclick="uploadImage()">Enviar</button>
   </div>
 
+  <!-- Galeria de Fotos -->
   <div id="gallery"></div>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const SUPABASE_URL = 'https://qewcnffjcrtqwutjymfd.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8';
-    const supabase = supabasejs.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Configurações do Supabase e Cloudinary
+    const SUPABASE_URL = "https://qewcnffjcrtqwutjymfd.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8"; // Substitua pela sua chave real
+    const CLOUD_NAME = "dbfwu9sdz";
+    const UPLOAD_PRESET = "polaroid";
 
-    let currentUser = null;
+    // Cria o cliente Supabase
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let currentUser = null; // Armazena os dados do usuário logado
 
-    async function signup() {
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value;
-
-      if (!username || !password) return alert("Preencha todos os campos!");
-
-      const { data, error } = await supabase
-        .from('users')
-        .insert([{ username, password }]);
-
-      if (error) return alert("Erro: " + error.message);
-
-      alert("Cadastro feito com sucesso!");
+    // Cadastro (signUp) – utiliza email fictício baseado no nome de usuário
+    async function signUp() {
+      const username = document.getElementById("authUsername").value.trim();
+      const password = document.getElementById("authPassword").value;
+      if (!username || !password) {
+        alert("Preencha nome de usuário e senha.");
+        return;
+      }
+      // Cria email fictício
+      const email = username + "@kodacview.app";
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        alert("Erro no cadastro: " + error.message);
+        return;
+      }
+      // Após o cadastro, insere o perfil na tabela profiles
+      const { error: profileError } = await supabase.from("profiles").insert([{ id: data.user.id, username }]);
+      if (profileError) {
+        alert("Erro ao salvar perfil: " + profileError.message);
+        return;
+      }
+      alert("Cadastro realizado com sucesso! Faça login.");
     }
 
-    async function login() {
-      const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value;
+    // Login (signIn)
+    async function signIn() {
+      const username = document.getElementById("authUsername").value.trim();
+      const password = document.getElementById("authPassword").value;
+      if (!username || !password) {
+        alert("Preencha nome de usuário e senha.");
+        return;
+      }
+      const email = username + "@kodacview.app";
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error || !data.user) {
+        alert("Erro no login: " + (error ? error.message : "Usuário não encontrado"));
+        return;
+      }
+      currentUser = data.user;
+      showUserArea(username);
+    }
 
-      const { data, error } = await supabase
-        .from('users')
-        .select("*")
-        .eq("username", username)
-        .eq("password", password)
-        .single();
+    // Logout (signOut)
+    async function signOut() {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        alert("Erro ao sair: " + error.message);
+      } else {
+        currentUser = null;
+        document.getElementById("uploadSection").style.display = "none";
+        loadGallery();
+      }
+    }
 
-      if (error || !data) return alert("Credenciais inválidas");
-
-      currentUser = data;
-      document.querySelector('.auth').style.display = 'none';
-      document.querySelector('.upload').style.display = 'block';
+    // Mostra a área de upload e atualiza a exibição do usuário
+    function showUserArea(username) {
+      document.getElementById("uploadSection").style.display = "block";
+      document.getElementById("authSection").style.display = "none";
       loadGallery();
     }
 
+    // Função para upload de imagem
     async function uploadImage() {
+      if (!currentUser) {
+        alert("Faça login para enviar imagens.");
+        return;
+      }
       const file = document.getElementById("fileInput").files[0];
-      const description = document.getElementById("descInput").value;
-
-      if (!file || !currentUser) return;
-
+      const description = document.getElementById("descInput").value.trim();
+      if (!file) {
+        alert("Selecione uma imagem.");
+        return;
+      }
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("upload_preset", "polaroid");
-      const cloudName = "dbfwu9sdz";
+      formData.append("upload_preset", UPLOAD_PRESET);
 
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
         method: "POST",
         body: formData
       });
+      const cloudData = await res.json();
+      const imageUrl = cloudData.secure_url;
+      if (!imageUrl) {
+        alert("Erro no upload da imagem.");
+        return;
+      }
+      // Busca o perfil para pegar o nome de usuário (deve ter sido salvo na tabela profiles)
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("id", currentUser.id)
+        .single();
+      if (profileError) {
+        alert("Erro ao buscar perfil: " + profileError.message);
+        return;
+      }
+      const username = profileData.username;
 
-      const data = await res.json();
-
-      await supabase.from("fotos").insert([
-        {
-          url: data.secure_url,
-          descricao: description,
-          user_id: currentUser.id
-        }
+      // Insere a imagem na tabela fotos com o user_id e username
+      const { error } = await supabase.from("fotos").insert([
+        { url: imageUrl, descricao: description, user_id: currentUser.id, username }
       ]);
-
-      loadGallery();
+      if (error) {
+        alert("Erro ao salvar imagem: " + error.message);
+      } else {
+        document.getElementById("fileInput").value = "";
+        document.getElementById("descInput").value = "";
+        loadGallery();
+      }
     }
 
+    // Função para deletar imagem (apenas se o uploader for o usuário logado)
     async function deleteImage(id) {
-      if (!confirm("Excluir essa imagem?")) return;
-
+      if (!confirm("Deseja realmente excluir esta imagem?")) return;
+      // Verifica o uploader da imagem
+      const { data, error } = await supabase.from("fotos").select("user_id").eq("id", id).single();
+      if (error) {
+        alert("Erro ao verificar imagem: " + error.message);
+        return;
+      }
+      if (data.user_id !== currentUser.id) {
+        alert("Você só pode excluir suas próprias imagens.");
+        return;
+      }
       await supabase.from("fotos").delete().eq("id", id);
       loadGallery();
     }
 
+    // Função para carregar a galeria
     async function loadGallery() {
-      const { data, error } = await supabase
-        .from("fotos")
-        .select("*, users(username)")
-        .order("id", { ascending: false });
-
+      const { data: fotos, error } = await supabase.from("fotos").select("*").order("id", { ascending: false });
       const gallery = document.getElementById("gallery");
       gallery.innerHTML = "";
-
-      data.forEach(item => {
-        const canDelete = currentUser && item.user_id === currentUser.id;
+      if (error) {
+        console.error("Erro ao carregar galeria:", error.message);
+        return;
+      }
+      fotos.forEach(foto => {
         const div = document.createElement("div");
         div.className = "polaroid";
+        // Se o usuário logado for o dono, exibe o botão de exclusão
+        let deleteBtn = "";
+        if (currentUser && foto.user_id === currentUser.id) {
+          deleteBtn = `<button class="delete-btn" onclick="deleteImage(${foto.id})">X</button>`;
+        }
         div.innerHTML = `
-          ${canDelete ? `<button class="delete-btn" onclick="deleteImage(${item.id})">X</button>` : ""}
-          <div class="username">${item.users?.username || "Desconhecido"}</div>
-          <img src="${item.url}" alt="foto">
-          <div class="description">${item.descricao || ""}</div>
+          <div class="username">${foto.username || "Anônimo"}</div>
+          ${deleteBtn}
+          <img src="${foto.url}" alt="Foto">
+          <div class="description">${foto.descricao || ""}</div>
         `;
         gallery.appendChild(div);
       });
     }
+
+    // Chamada inicial: verifica se há sessão ativa
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        currentUser = session.user;
+        supabase.from("profiles")
+          .select("username")
+          .eq("id", currentUser.id)
+          .single()
+          .then(({ data: profileData, error }) => {
+            if (profileData) {
+              showUserArea(profileData.username);
+            }
+          });
+      }
+      loadGallery();
+    });
   </script>
 </body>
 </html>
