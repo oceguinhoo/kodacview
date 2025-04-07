@@ -1,19 +1,20 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>KodacMemories</title>
-  <link rel="icon" type="image/png" href="favicon.png">
+  <meta charset="UTF-8">
+  <title>KodacView</title>
+  <link rel="icon" href="icone.png">
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
-      background: #fdf8f2;
+      background: #fdf6e3;
       margin: 0;
       padding: 0;
       display: flex;
       flex-direction: column;
       align-items: center;
     }
+
     h1 {
       background: linear-gradient(to right, #ff6a00, #ee0979);
       color: white;
@@ -21,180 +22,145 @@
       text-align: center;
       padding: 20px 0;
       margin: 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
       font-size: 2em;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .auth, .upload {
-      margin: 20px auto;
-      max-width: 400px;
-      padding: 20px;
-      background: #fff;
-      border: 1px solid #ddd;
-      border-radius: 10px;
+
+    .controls, .auth {
+      margin: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
     }
+
     input, button {
       padding: 10px;
-      margin: 5px 0;
-      width: 100%;
       border-radius: 5px;
       border: 1px solid #ccc;
-      font-size: 1em;
     }
+
     #gallery {
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
-      gap: 20px;
+      gap: 25px;
       padding: 20px;
       max-width: 1200px;
     }
+
     .polaroid {
       background: white;
-      padding: 10px;
+      padding: 12px;
       border-radius: 10px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
       width: 220px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      position: relative;
       text-align: center;
+      transition: transform 0.2s;
+      position: relative;
     }
+
+    .polaroid:hover {
+      transform: scale(1.05);
+    }
+
     .polaroid img {
       width: 100%;
-      border-radius: 4px;
-      display: block;
+      height: auto;
+      border-radius: 8px;
     }
-    .username {
-      font-weight: bold;
-      margin-bottom: 5px;
-    }
+
     .description {
-      font-size: 0.9em;
-      margin-top: 5px;
+      margin-top: 8px;
+      font-size: 0.85em;
     }
+
+    .username-label {
+      font-weight: bold;
+      font-size: 0.9em;
+      margin-bottom: 4px;
+      color: #444;
+    }
+
     .delete-btn {
       position: absolute;
-      top: 5px;
-      right: 5px;
+      top: 8px;
+      right: 8px;
       background: red;
       color: white;
       border: none;
-      border-radius: 4px;
-      padding: 4px;
+      border-radius: 5px;
+      padding: 5px;
       cursor: pointer;
-      font-size: 0.8em;
     }
   </style>
 </head>
 <body>
-  <h1>KodacMemories</h1>
+  <h1>KodacView</h1>
 
-  <!-- Área de Autenticação -->
-  <div class="auth" id="authSection">
-    <h3>Entrar / Cadastrar</h3>
-    <!-- Usamos apenas nome de usuário e senha -->
-    <input type="text" id="authUsername" placeholder="Nome de usuário">
-    <input type="password" id="authPassword" placeholder="Senha">
-    <button onclick="signUp()">Cadastrar</button>
-    <button onclick="signIn()">Entrar</button>
-    <button onclick="signOut()">Sair</button>
+  <div class="auth">
+    <input type="text" id="username" placeholder="Usuário">
+    <input type="password" id="senha" placeholder="Senha">
+    <button onclick="registrar()">Cadastrar</button>
+    <button onclick="login()">Entrar</button>
+    <button onclick="logout()">Sair</button>
   </div>
 
-  <!-- Área de Upload (visível somente se logado) -->
-  <div class="upload" id="uploadSection" style="display:none;">
-    <h3>Enviar nova foto</h3>
+  <div class="controls" id="uploadControls" style="display:none">
     <input type="file" id="fileInput" accept="image/*">
-    <input type="text" id="descInput" placeholder="Descrição da foto">
+    <input type="text" id="descInput" placeholder="Descrição da imagem">
     <button onclick="uploadImage()">Enviar</button>
   </div>
 
-  <!-- Galeria de Fotos -->
   <div id="gallery"></div>
 
-  <!-- Supabase SDK -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
-    // Configurações do Supabase e Cloudinary
     const SUPABASE_URL = "https://qewcnffjcrtqwutjymfd.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8"; // Substitua pela sua chave real
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8";
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     const CLOUD_NAME = "dbfwu9sdz";
     const UPLOAD_PRESET = "polaroid";
 
-    // Cria o cliente Supabase
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    let currentUser = null; // Armazena os dados do usuário logado
+    let user = null;
 
-    // Cadastro (signUp) – utiliza email fictício baseado no nome de usuário
-    async function signUp() {
-      const username = document.getElementById("authUsername").value.trim();
-      const password = document.getElementById("authPassword").value;
-      if (!username || !password) {
-        alert("Preencha nome de usuário e senha.");
-        return;
-      }
-      // Cria email fictício
-      const email = username + "@kodacview.app";
-      const { data, error } = await supabase.auth.signUp({ email, password });
-      if (error) {
-        alert("Erro no cadastro: " + error.message);
-        return;
-      }
-      // Após o cadastro, insere o perfil na tabela profiles
-      const { error: profileError } = await supabase.from("profiles").insert([{ id: data.user.id, username }]);
-      if (profileError) {
-        alert("Erro ao salvar perfil: " + profileError.message);
-        return;
-      }
-      alert("Cadastro realizado com sucesso! Faça login.");
+    async function registrar() {
+      const username = document.getElementById("username").value.trim();
+      const senha = document.getElementById("senha").value.trim();
+      if (!username || !senha) return alert("Preencha todos os campos");
+
+      const hash = await sha256(senha);
+      const { error } = await client.from("profiles").insert({ username, senha_hash: hash });
+
+      if (error) return alert("Erro: " + error.message);
+      alert("Usuário registrado com sucesso!");
     }
 
-    // Login (signIn)
-    async function signIn() {
-      const username = document.getElementById("authUsername").value.trim();
-      const password = document.getElementById("authPassword").value;
-      if (!username || !password) {
-        alert("Preencha nome de usuário e senha.");
-        return;
-      }
-      const email = username + "@kodacview.app";
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error || !data.user) {
-        alert("Erro no login: " + (error ? error.message : "Usuário não encontrado"));
-        return;
-      }
-      currentUser = data.user;
-      showUserArea(username);
+    async function login() {
+      const username = document.getElementById("username").value.trim();
+      const senha = document.getElementById("senha").value.trim();
+      const hash = await sha256(senha);
+
+      const { data, error } = await client.from("profiles").select("*").eq("username", username).eq("senha_hash", hash).single();
+
+      if (error || !data) return alert("Login inválido");
+      user = data;
+      document.getElementById("uploadControls").style.display = "flex";
+      alert("Login realizado!");
     }
 
-    // Logout (signOut)
-    async function signOut() {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        alert("Erro ao sair: " + error.message);
-      } else {
-        currentUser = null;
-        document.getElementById("uploadSection").style.display = "none";
-        loadGallery();
-      }
+    function logout() {
+      user = null;
+      document.getElementById("uploadControls").style.display = "none";
     }
 
-    // Mostra a área de upload e atualiza a exibição do usuário
-    function showUserArea(username) {
-      document.getElementById("uploadSection").style.display = "block";
-      document.getElementById("authSection").style.display = "none";
-      loadGallery();
-    }
-
-    // Função para upload de imagem
     async function uploadImage() {
-      if (!currentUser) {
-        alert("Faça login para enviar imagens.");
-        return;
-      }
+      if (!user) return alert("Faça login primeiro.");
       const file = document.getElementById("fileInput").files[0];
-      const description = document.getElementById("descInput").value.trim();
-      if (!file) {
-        alert("Selecione uma imagem.");
-        return;
-      }
+      const desc = document.getElementById("descInput").value.trim();
+
+      if (!file) return alert("Selecione uma imagem.");
+
       const formData = new FormData();
       formData.append("file", file);
       formData.append("upload_preset", UPLOAD_PRESET);
@@ -203,74 +169,37 @@
         method: "POST",
         body: formData
       });
-      const cloudData = await res.json();
-      const imageUrl = cloudData.secure_url;
-      if (!imageUrl) {
-        alert("Erro no upload da imagem.");
-        return;
-      }
-      // Busca o perfil para pegar o nome de usuário (deve ter sido salvo na tabela profiles)
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("username")
-        .eq("id", currentUser.id)
-        .single();
-      if (profileError) {
-        alert("Erro ao buscar perfil: " + profileError.message);
-        return;
-      }
-      const username = profileData.username;
 
-      // Insere a imagem na tabela fotos com o user_id e username
-      const { error } = await supabase.from("fotos").insert([
-        { url: imageUrl, descricao: description, user_id: currentUser.id, username }
-      ]);
-      if (error) {
-        alert("Erro ao salvar imagem: " + error.message);
-      } else {
-        document.getElementById("fileInput").value = "";
-        document.getElementById("descInput").value = "";
-        loadGallery();
-      }
-    }
+      const data = await res.json();
+      const imageUrl = data.secure_url;
 
-    // Função para deletar imagem (apenas se o uploader for o usuário logado)
-    async function deleteImage(id) {
-      if (!confirm("Deseja realmente excluir esta imagem?")) return;
-      // Verifica o uploader da imagem
-      const { data, error } = await supabase.from("fotos").select("user_id").eq("id", id).single();
-      if (error) {
-        alert("Erro ao verificar imagem: " + error.message);
-        return;
-      }
-      if (data.user_id !== currentUser.id) {
-        alert("Você só pode excluir suas próprias imagens.");
-        return;
-      }
-      await supabase.from("fotos").delete().eq("id", id);
+      await client.from("fotos").insert({
+        url: imageUrl,
+        descricao: desc,
+        user_id: user.id,
+        username: user.username
+      });
+
       loadGallery();
     }
 
-    // Função para carregar a galeria
+    async function deleteImage(id, donoId) {
+      if (!user || user.id !== donoId) return alert("Você só pode excluir suas próprias fotos.");
+      await client.from("fotos").delete().eq("id", id);
+      loadGallery();
+    }
+
     async function loadGallery() {
-      const { data: fotos, error } = await supabase.from("fotos").select("*").order("id", { ascending: false });
+      const { data, error } = await client.from("fotos").select("*").order("id", { ascending: false });
       const gallery = document.getElementById("gallery");
       gallery.innerHTML = "";
-      if (error) {
-        console.error("Erro ao carregar galeria:", error.message);
-        return;
-      }
-      fotos.forEach(foto => {
+
+      data.forEach(foto => {
         const div = document.createElement("div");
         div.className = "polaroid";
-        // Se o usuário logado for o dono, exibe o botão de exclusão
-        let deleteBtn = "";
-        if (currentUser && foto.user_id === currentUser.id) {
-          deleteBtn = `<button class="delete-btn" onclick="deleteImage(${foto.id})">X</button>`;
-        }
         div.innerHTML = `
-          <div class="username">${foto.username || "Anônimo"}</div>
-          ${deleteBtn}
+          <div class="username-label">${foto.username}</div>
+          ${user && user.id === foto.user_id ? `<button class="delete-btn" onclick="deleteImage(${foto.id}, ${foto.user_id})">X</button>` : ""}
           <img src="${foto.url}" alt="Foto">
           <div class="description">${foto.descricao || ""}</div>
         `;
@@ -278,22 +207,14 @@
       });
     }
 
-    // Chamada inicial: verifica se há sessão ativa
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        currentUser = session.user;
-        supabase.from("profiles")
-          .select("username")
-          .eq("id", currentUser.id)
-          .single()
-          .then(({ data: profileData, error }) => {
-            if (profileData) {
-              showUserArea(profileData.username);
-            }
-          });
-      }
-      loadGallery();
-    });
+    async function sha256(str) {
+      const msgUint8 = new TextEncoder().encode(str);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    loadGallery();
   </script>
 </body>
 </html>
