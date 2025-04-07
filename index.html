@@ -3,157 +3,239 @@
 <head>
   <meta charset="UTF-8" />
   <title>KodacView</title>
-  <link rel="icon" href="seu_icone_aqui.png" />
   <style>
-    /* Seu estilo anterior permanece, mantenha o CSS conforme o último funcionando */
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #fafafa;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      background: linear-gradient(to right, #ff6a00, #ee0979);
+      color: white;
+      width: 100%;
+      text-align: center;
+      padding: 20px 0;
+      margin: 0;
+      font-size: 2em;
+    }
+
+    .controls, .auth {
+      margin: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    input, button {
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+
+    #gallery {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .polaroid {
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+      width: 200px;
+      text-align: center;
+      position: relative;
+    }
+
+    .polaroid img {
+      width: 100%;
+      height: auto;
+      border-radius: 6px;
+    }
+
+    .user {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .description {
+      font-size: 0.9em;
+      margin-top: 5px;
+    }
+
+    .delete-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: red;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      padding: 3px 6px;
+      cursor: pointer;
+    }
+
+    #loadMoreBtn {
+      margin: 20px;
+    }
   </style>
 </head>
 <body>
   <h1>KodacView</h1>
 
-  <div class="controls" id="auth">
-    <input type="text" id="username" placeholder="Nome de usuário" />
-    <input type="password" id="password" placeholder="Senha" />
-    <button onclick="signUp()">Cadastrar</button>
-    <button onclick="signIn()">Entrar</button>
+  <div class="auth">
+    <input id="username" placeholder="Usuário" />
+    <input id="password" type="password" placeholder="Senha" />
+    <button onclick="login()">Entrar</button>
+    <button onclick="signup()">Cadastrar</button>
   </div>
 
-  <div class="controls" id="uploadSection" style="display:none;">
-    <span id="welcome"></span>
+  <div class="controls" id="uploadSection" style="display: none;">
     <input type="file" id="fileInput" accept="image/*">
-    <input type="text" id="descInput" placeholder="Descrição da imagem">
+    <input type="text" id="descInput" placeholder="Descrição">
     <button onclick="uploadImage()">Enviar</button>
-    <button onclick="logout()">Sair</button>
   </div>
 
   <div id="gallery"></div>
+  <button id="loadMoreBtn" onclick="loadGallery()" style="display: none;">Carregar mais</button>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
-    const SUPABASE_URL = 'https://qewcnffjcrtqwutjymfd.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8';
-    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const SUPABASE_URL = "https://qewcnffjcrtqwutjymfd.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8";
+    const supabase = supabasejs.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let currentUser = null;
+    let page = 0;
+    const limit = 6;
 
-    async function signUp() {
+    async function signup() {
       const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value.trim();
-      if (!username || !password) return alert('Preencha todos os campos.');
+      const password = document.getElementById('password').value;
 
-      const hash = await sha256(password);
+      if (!username || !password) return alert("Preencha todos os campos.");
+
+      const hash = await hashPassword(password);
 
       const { data, error } = await supabase
-        .from('profiles')
+        .from("profiles")
         .insert([{ username, senha_hash: hash }]);
 
-      if (error) {
-        alert('Erro no cadastro: ' + error.message);
-      } else {
-        alert('Cadastro realizado com sucesso. Agora entre.');
-      }
+      if (error) return alert("Erro ao cadastrar: " + error.message);
+      alert("Usuário cadastrado!");
     }
 
-    async function signIn() {
+    async function login() {
       const username = document.getElementById('username').value.trim();
-      const password = document.getElementById('password').value.trim();
-      const hash = await sha256(password);
+      const password = document.getElementById('password').value;
 
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('username', username)
-        .eq('senha_hash', hash)
+        .from("profiles")
+        .select("*")
+        .eq("username", username)
         .single();
 
-      if (error || !data) {
-        alert('Usuário ou senha inválidos');
-      } else {
-        currentUser = data;
-        document.getElementById('auth').style.display = 'none';
-        document.getElementById('uploadSection').style.display = 'block';
-        document.getElementById('welcome').textContent = `Bem-vindo, ${currentUser.username}`;
-        loadGallery();
-      }
+      if (error || !data) return alert("Usuário não encontrado.");
+
+      const hash = await hashPassword(password);
+      if (data.senha_hash !== hash) return alert("Senha incorreta.");
+
+      currentUser = data;
+      document.getElementById("uploadSection").style.display = "flex";
+      alert("Bem-vindo, " + data.username + "!");
+      loadGallery(true);
+    }
+
+    async function hashPassword(str) {
+      const msgUint8 = new TextEncoder().encode(str);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
     async function uploadImage() {
-      const file = document.getElementById('fileInput').files[0];
-      const description = document.getElementById('descInput').value;
+      const file = document.getElementById("fileInput").files[0];
+      const description = document.getElementById("descInput").value;
 
-      if (!file || !currentUser) return;
+      if (!file || !currentUser) return alert("Faça login e selecione uma imagem.");
 
       const formData = new FormData();
-      formData.append('file', file);
-      formData.append('upload_preset', 'polaroid');
+      formData.append("file", file);
+      formData.append("upload_preset", "polaroid");
 
-      const res = await fetch('https://api.cloudinary.com/v1_1/dbfwu9sdz/image/upload', {
-        method: 'POST',
-        body: formData,
+      const res = await fetch("https://api.cloudinary.com/v1_1/dbfwu9sdz/image/upload", {
+        method: "POST",
+        body: formData
       });
 
       const data = await res.json();
-      const imageUrl = data.secure_url;
 
-      await supabase.from('fotos').insert([
-        { url: imageUrl, descricao: description, username: currentUser.username }
-      ]);
+      await supabase.from("fotos").insert([{
+        url: data.secure_url,
+        descricao: description,
+        user_id: currentUser.id
+      }]);
 
-      loadGallery();
-      document.getElementById('fileInput').value = '';
-      document.getElementById('descInput').value = '';
+      document.getElementById("fileInput").value = "";
+      document.getElementById("descInput").value = "";
+      page = 0;
+      loadGallery(true);
     }
 
-    async function deleteImage(id, username) {
-      if (currentUser?.username !== username) {
-        alert('Você só pode excluir suas próprias fotos.');
-        return;
-      }
+    async function deleteImage(id) {
+      if (!currentUser) return;
 
-      const confirmDelete = confirm('Deseja excluir esta imagem?');
-      if (confirmDelete) {
-        await supabase.from('fotos').delete().eq('id', id);
-        loadGallery();
-      }
-    }
-
-    async function loadGallery() {
       const { data, error } = await supabase
-        .from('fotos')
-        .select('*')
-        .order('id', { ascending: false });
+        .from("fotos")
+        .select("user_id")
+        .eq("id", id)
+        .single();
 
-      const gallery = document.getElementById('gallery');
-      gallery.innerHTML = "";
+      if (data.user_id !== currentUser.id) return alert("Você não pode apagar esta foto.");
 
-      data.forEach(foto => {
-        const div = document.createElement('div');
-        div.className = 'polaroid';
-        div.innerHTML = `
-          <div style="font-weight: bold; margin-bottom: 5px;">@${foto.username}</div>
-          <img src="${foto.url}" alt="Foto">
-          <div class="description">${foto.descricao}</div>
-          ${currentUser?.username === foto.username
-            ? `<button class="delete-btn" onclick="deleteImage(${foto.id}, '${foto.username}')">X</button>`
-            : ''
-          }
-        `;
-        gallery.appendChild(div);
-      });
+      await supabase.from("fotos").delete().eq("id", id);
+      loadGallery(true);
     }
 
-    function logout() {
-      currentUser = null;
-      document.getElementById('auth').style.display = 'block';
-      document.getElementById('uploadSection').style.display = 'none';
-      document.getElementById('gallery').innerHTML = '';
-    }
+    async function loadGallery(reset = false) {
+      if (reset) {
+        page = 0;
+        document.getElementById("gallery").innerHTML = "";
+      }
 
-    async function sha256(message) {
-      const msgBuffer = new TextEncoder().encode(message);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      const { data, error } = await supabase
+        .from("fotos")
+        .select("*, profiles(username)")
+        .order("id", { ascending: false })
+        .range(page * limit, (page + 1) * limit - 1);
+
+      if (data.length > 0) {
+        data.forEach(item => {
+          const div = document.createElement("div");
+          div.className = "polaroid";
+          div.innerHTML = `
+            ${currentUser?.id === item.user_id ? `<button class="delete-btn" onclick="deleteImage(${item.id})">X</button>` : ""}
+            <div class="user">@${item.profiles?.username || "anônimo"}</div>
+            <img src="${item.url}" alt="">
+            <div class="description">${item.descricao}</div>
+          `;
+          document.getElementById("gallery").appendChild(div);
+        });
+
+        document.getElementById("loadMoreBtn").style.display = "block";
+        page++;
+      } else {
+        document.getElementById("loadMoreBtn").style.display = "none";
+      }
     }
   </script>
 </body>
