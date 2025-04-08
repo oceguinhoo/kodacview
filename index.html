@@ -1,80 +1,73 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>KodacView</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #fdf6ec;
+      background: #fdfaf4;
       margin: 0;
       padding: 0;
       text-align: center;
     }
-
     h1 {
-      background-color: #ffcc70;
-      color: #333;
-      padding: 20px;
+      background: #ffcc70;
       margin: 0;
-      font-family: 'Georgia', serif;
+      padding: 20px;
+      font-size: 2em;
+      color: #333;
     }
-
-    .controls, .auth {
-      margin: 20px;
+    .auth, .upload {
+      margin: 20px auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      width: 300px;
     }
-
     input, button {
       padding: 10px;
-      margin: 5px;
-      border-radius: 5px;
+      border-radius: 6px;
       border: 1px solid #ccc;
     }
-
     #gallery {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 25px;
       padding: 20px;
+      max-width: 1000px;
+      margin: auto;
     }
-
     .polaroid {
       background: white;
+      padding: 12px;
       border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      padding: 10px;
-      width: 220px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
       text-align: center;
       position: relative;
     }
-
     .polaroid img {
       width: 100%;
-      height: auto;
-      border-radius: 6px;
+      border-radius: 8px;
     }
-
     .username {
       font-weight: bold;
-      margin-bottom: 5px;
       color: #555;
+      margin-bottom: 5px;
     }
-
-    .description {
-      margin-top: 10px;
+    .desc {
       font-size: 0.9em;
+      color: #333;
     }
-
     .delete-btn {
       position: absolute;
-      top: 5px;
-      right: 5px;
+      top: 6px;
+      right: 6px;
       background: red;
       color: white;
       border: none;
-      padding: 5px 8px;
       border-radius: 5px;
+      padding: 5px;
       cursor: pointer;
     }
   </style>
@@ -83,16 +76,16 @@
   <h1>KodacView</h1>
 
   <div class="auth">
-    <input type="text" id="username" placeholder="Nome de usuário">
-    <input type="password" id="password" placeholder="Senha">
+    <input type="text" id="username" placeholder="Nome de usuário" />
+    <input type="password" id="senha" placeholder="Senha" />
     <button onclick="login()">Entrar</button>
-    <button onclick="signup()">Cadastrar</button>
+    <button onclick="register()">Cadastrar</button>
   </div>
 
-  <div class="controls" id="uploadControls" style="display: none;">
-    <input type="file" id="fileInput" accept="image/*">
-    <input type="text" id="descInput" placeholder="Descrição da imagem">
-    <button onclick="uploadImage()">Enviar</button>
+  <div class="upload" style="display:none;">
+    <input type="file" id="fileInput" accept="image/*" />
+    <input type="text" id="descInput" placeholder="Descrição da imagem" />
+    <button onclick="uploadImage()">Enviar Foto</button>
     <button onclick="logout()">Sair</button>
   </div>
 
@@ -100,82 +93,94 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
-    const SUPABASE_URL = 'https://qewcnffjcrtqwutjymfd.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8'; // Substitua pela sua chave real
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
+    const supabaseUrl = "https://qewcnffjcrtqwutjymfd.supabase.co";
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8";
+    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
     let currentUser = null;
-    let currentUserId = null;
 
-    async function signup() {
+    async function register() {
       const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value;
+      const senha = document.getElementById("senha").value.trim();
 
-      if (!username || !password) return alert("Preencha todos os campos");
+      if (!username || !senha) return alert("Preencha usuário e senha.");
 
-      const senha_hash = btoa(password); // Simples (substituir por hash real se possível)
+      const senhaHash = btoa(senha);
 
-      const { data, error } = await supabase.from("profiles").insert([{ username, senha_hash }]);
+      const { data, error } = await supabase
+        .from("profiles")
+        .insert([{ username, senha_hash: senhaHash }]);
 
-      if (error) return alert("Erro no cadastro: " + error.message);
-
-      alert("Cadastro feito com sucesso!");
+      if (error) {
+        alert("Erro no cadastro: " + error.message);
+      } else {
+        alert("Cadastro realizado com sucesso!");
+      }
     }
 
     async function login() {
       const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value;
-
-      const senha_hash = btoa(password);
+      const senha = document.getElementById("senha").value.trim();
+      const senhaHash = btoa(senha);
 
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("username", username)
-        .eq("senha_hash", senha_hash)
+        .eq("senha_hash", senhaHash)
         .single();
 
-      if (error || !data) return alert("Usuário ou senha inválidos");
-
-      currentUser = data.username;
-      currentUserId = data.id;
-
-      document.getElementById("uploadControls").style.display = "block";
-      document.querySelector(".auth").style.display = "none";
-
-      loadGallery();
+      if (error || !data) {
+        alert("Usuário ou senha inválidos.");
+      } else {
+        currentUser = data;
+        document.querySelector(".auth").style.display = "none";
+        document.querySelector(".upload").style.display = "flex";
+        loadGallery();
+      }
     }
 
     function logout() {
       currentUser = null;
-      currentUserId = null;
-      document.getElementById("uploadControls").style.display = "none";
-      document.querySelector(".auth").style.display = "block";
+      document.querySelector(".auth").style.display = "flex";
+      document.querySelector(".upload").style.display = "none";
+      document.getElementById("gallery").innerHTML = "";
     }
 
     async function uploadImage() {
       const file = document.getElementById("fileInput").files[0];
-      const descricao = document.getElementById("descInput").value;
+      const descricao = document.getElementById("descInput").value.trim();
 
-      if (!file || !currentUserId) return alert("Faça login e selecione uma imagem");
+      if (!file || !currentUser) return alert("Usuário não logado ou imagem faltando.");
 
-      const filePath = `${Date.now()}-${file.name}`;
-      const { error: uploadError } = await supabase.storage.from("fotos").upload(filePath, file);
+      const fileName = Date.now() + "-" + file.name;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("fotos")
+        .upload(fileName, file);
 
-      if (uploadError) return alert("Erro ao enviar imagem: " + uploadError.message);
+      if (uploadError) {
+        alert("Erro no upload: " + uploadError.message);
+        return;
+      }
 
-      const { data: publicUrlData } = supabase.storage.from("fotos").getPublicUrl(filePath);
-      const imageUrl = publicUrlData.publicUrl;
+      const imageUrl = supabase.storage.from("fotos").getPublicUrl(fileName).data.publicUrl;
 
-      const { error } = await supabase.from("fotos").insert([
-        { url: imageUrl, descricao, user_id: currentUserId }
+      await supabase.from("fotos").insert([
+        {
+          url: imageUrl,
+          descricao: descricao,
+          user_id: currentUser.id
+        }
       ]);
-
-      if (error) return alert("Erro ao salvar no banco: " + error.message);
 
       document.getElementById("fileInput").value = "";
       document.getElementById("descInput").value = "";
+      loadGallery();
+    }
 
+    async function deleteImage(id) {
+      if (!confirm("Tem certeza que deseja excluir?")) return;
+
+      await supabase.from("fotos").delete().eq("id", id).eq("user_id", currentUser.id);
       loadGallery();
     }
 
@@ -185,30 +190,27 @@
         .select("*, profiles(username)")
         .order("id", { ascending: false });
 
+      if (error) {
+        console.error("Erro ao carregar galeria:", error);
+        return;
+      }
+
       const gallery = document.getElementById("gallery");
       gallery.innerHTML = "";
 
-      if (error) return console.error("Erro ao carregar galeria:", error.message);
-
-      data.forEach(item => {
+      data.forEach(foto => {
         const div = document.createElement("div");
         div.className = "polaroid";
+
         div.innerHTML = `
-          <div class="username">${item.profiles?.username || "Usuário"}</div>
-          <img src="${item.url}" alt="Foto">
-          <div class="description">${item.descricao || ""}</div>
-          ${item.user_id === currentUserId ? `<button class="delete-btn" onclick="deleteImage(${item.id})">X</button>` : ""}
+          <div class="username">${foto.profiles?.username || "Desconhecido"}</div>
+          <img src="${foto.url}" />
+          <div class="desc">${foto.descricao || ""}</div>
+          ${currentUser && foto.user_id === currentUser.id ? `
+            <button class="delete-btn" onclick="deleteImage(${foto.id})">X</button>` : ""}
         `;
         gallery.appendChild(div);
       });
-    }
-
-    async function deleteImage(id) {
-      if (!confirm("Tem certeza que deseja excluir esta imagem?")) return;
-
-      const { error } = await supabase.from("fotos").delete().eq("id", id).eq("user_id", currentUserId);
-      if (error) return alert("Erro ao excluir: " + error.message);
-      loadGallery();
     }
   </script>
 </body>
