@@ -1,229 +1,215 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Álbum Nostalgia</title>
+  <title>KodacView</title>
   <style>
     body {
-      font-family: 'Courier New', monospace;
-      background-color: #fefaf3;
+      font-family: Arial, sans-serif;
+      background: #fdf6ec;
       margin: 0;
-      padding: 20px;
+      padding: 0;
       text-align: center;
     }
 
     h1 {
-      font-size: 36px;
-      color: #b73e3e;
+      background-color: #ffcc70;
+      color: #333;
+      padding: 20px;
+      margin: 0;
       font-family: 'Georgia', serif;
-      margin-bottom: 10px;
-      text-shadow: 1px 1px 0 #fff;
     }
 
-    .auth, .upload, .galeria {
-      margin: 20px auto;
-      max-width: 500px;
+    .controls, .auth {
+      margin: 20px;
     }
 
     input, button {
-      margin: 5px;
       padding: 10px;
-      border: none;
-      border-radius: 5px;
-      font-size: 16px;
-    }
-
-    .foto-card {
-      display: inline-block;
-      margin: 10px;
-      background: white;
-      border: 10px solid #fff;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-      width: 180px;
-    }
-
-    .foto-card img {
-      max-width: 100%;
-      height: auto;
-      display: block;
-    }
-
-    .foto-usuario {
-      font-size: 14px;
-      background: #fff5e1;
-      padding: 4px;
-      font-weight: bold;
-      border-bottom: 1px solid #ccc;
-    }
-
-    .botao-deletar {
-      background: #ffdddd;
-      border: none;
-      padding: 6px 10px;
-      cursor: pointer;
-      color: red;
       margin: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
     }
 
-    #carregarMais {
-      margin-top: 20px;
-      padding: 10px 20px;
+    #gallery {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .polaroid {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+      padding: 10px;
+      width: 220px;
+      text-align: center;
+      position: relative;
+    }
+
+    .polaroid img {
+      width: 100%;
+      height: auto;
+      border-radius: 6px;
+    }
+
+    .username {
       font-weight: bold;
-      background: #ffe9c4;
+      margin-bottom: 5px;
+      color: #555;
+    }
+
+    .description {
+      margin-top: 10px;
+      font-size: 0.9em;
+    }
+
+    .delete-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: red;
+      color: white;
+      border: none;
+      padding: 5px 8px;
+      border-radius: 5px;
       cursor: pointer;
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 <body>
-  <h1>Álbum Nostalgia</h1>
+  <h1>KodacView</h1>
 
   <div class="auth">
     <input type="text" id="username" placeholder="Nome de usuário">
-    <input type="password" id="senha" placeholder="Senha">
-    <button onclick="registrar()">Registrar</button>
-    <button onclick="login()">Login</button>
-    <button onclick="logout()">Logout</button>
+    <input type="password" id="password" placeholder="Senha">
+    <button onclick="login()">Entrar</button>
+    <button onclick="signup()">Cadastrar</button>
   </div>
 
-  <div class="upload" style="display:none">
-    <input type="file" id="fileInput">
-    <button onclick="uploadFoto()">Enviar Foto</button>
+  <div class="controls" id="uploadControls" style="display: none;">
+    <input type="file" id="fileInput" accept="image/*">
+    <input type="text" id="descInput" placeholder="Descrição da imagem">
+    <button onclick="uploadImage()">Enviar</button>
+    <button onclick="logout()">Sair</button>
   </div>
 
-  <div class="galeria" id="galeria"></div>
-  <button id="carregarMais" style="display:none" onclick="loadGallery()">Carregar mais</button>
+  <div id="gallery"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
-    const supabase = supabasejs.createClient(
-      'https://qewcnffjcrtqwutjymfd.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8'
-    );
+    const SUPABASE_URL = 'https://qewcnffjcrtqwutjymfd.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8'; // Substitua pela sua chave real
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let usuarioAtual = null;
-    let page = 0;
-    const fotosPorPagina = 9;
+    let currentUser = null;
+    let currentUserId = null;
 
-    async function registrar() {
-      const username = document.getElementById('username').value.trim();
-      const senha = document.getElementById('senha').value.trim();
-      if (!username || !senha) return alert("Preencha todos os campos.");
+    async function signup() {
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
 
-      const { data, error: existente } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('username', username)
-        .single();
+      if (!username || !password) return alert("Preencha todos os campos");
 
-      if (existente == null && data) {
-        return alert("Nome de usuário já existe.");
-      }
+      const senha_hash = btoa(password); // Simples (substituir por hash real se possível)
 
-      const hash = btoa(senha);
-      const { data: novo, error } = await supabase
-        .from('profiles')
-        .insert([{ id: crypto.randomUUID(), username, senha_hash: hash }]);
+      const { data, error } = await supabase.from("profiles").insert([{ username, senha_hash }]);
 
-      if (error) {
-        alert("Erro no cadastro: " + error.message);
-      } else {
-        alert("Usuário cadastrado com sucesso!");
-      }
+      if (error) return alert("Erro no cadastro: " + error.message);
+
+      alert("Cadastro feito com sucesso!");
     }
 
     async function login() {
-      const username = document.getElementById('username').value.trim();
-      const senha = document.getElementById('senha').value.trim();
-      const hash = btoa(senha);
+      const username = document.getElementById("username").value.trim();
+      const password = document.getElementById("password").value;
+
+      const senha_hash = btoa(password);
 
       const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('username', username)
-        .eq('senha_hash', hash)
+        .from("profiles")
+        .select("*")
+        .eq("username", username)
+        .eq("senha_hash", senha_hash)
         .single();
 
-      if (error || !data) {
-        alert("Login inválido.");
-        return;
-      }
+      if (error || !data) return alert("Usuário ou senha inválidos");
 
-      usuarioAtual = data;
-      document.querySelector('.upload').style.display = 'block';
-      alert("Bem-vindo(a), " + data.username + "!");
+      currentUser = data.username;
+      currentUserId = data.id;
+
+      document.getElementById("uploadControls").style.display = "block";
+      document.querySelector(".auth").style.display = "none";
+
+      loadGallery();
     }
 
     function logout() {
-      usuarioAtual = null;
-      document.querySelector('.upload').style.display = 'none';
+      currentUser = null;
+      currentUserId = null;
+      document.getElementById("uploadControls").style.display = "none";
+      document.querySelector(".auth").style.display = "block";
     }
 
-    async function uploadFoto() {
-      const file = document.getElementById('fileInput').files[0];
-      if (!file || !usuarioAtual) return alert("Login e foto são obrigatórios.");
+    async function uploadImage() {
+      const file = document.getElementById("fileInput").files[0];
+      const descricao = document.getElementById("descInput").value;
 
-      const nome = Date.now() + "-" + file.name;
-      const { error: erroUpload } = await supabase.storage
-        .from('fotos')
-        .upload(nome, file, { contentType: file.type });
+      if (!file || !currentUserId) return alert("Faça login e selecione uma imagem");
 
-      if (erroUpload) {
-        alert("Erro no upload: " + erroUpload.message);
-        return;
-      }
+      const filePath = `${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabase.storage.from("fotos").upload(filePath, file);
 
-      const { data: urlObj } = supabase.storage.from('fotos').getPublicUrl(nome);
-      await supabase.from('fotos').insert([{ user_id: usuarioAtual.id, url: urlObj.publicUrl }]);
-      page = 0;
-      document.getElementById('galeria').innerHTML = '';
+      if (uploadError) return alert("Erro ao enviar imagem: " + uploadError.message);
+
+      const { data: publicUrlData } = supabase.storage.from("fotos").getPublicUrl(filePath);
+      const imageUrl = publicUrlData.publicUrl;
+
+      const { error } = await supabase.from("fotos").insert([
+        { url: imageUrl, descricao, user_id: currentUserId }
+      ]);
+
+      if (error) return alert("Erro ao salvar no banco: " + error.message);
+
+      document.getElementById("fileInput").value = "";
+      document.getElementById("descInput").value = "";
+
       loadGallery();
     }
 
     async function loadGallery() {
-      const { data: fotos, error } = await supabase
-        .from('fotos')
-        .select('*, profiles(username)')
-        .order('id', { ascending: false })
-        .range(page * fotosPorPagina, (page + 1) * fotosPorPagina - 1);
+      const { data, error } = await supabase
+        .from("fotos")
+        .select("*, profiles(username)")
+        .order("id", { ascending: false });
 
-      if (error) {
-        console.error("Erro ao carregar galeria:", error.message);
-        return;
-      }
+      const gallery = document.getElementById("gallery");
+      gallery.innerHTML = "";
 
-      fotos.forEach(foto => {
-        const div = document.createElement('div');
-        div.className = "foto-card";
+      if (error) return console.error("Erro ao carregar galeria:", error.message);
+
+      data.forEach(item => {
+        const div = document.createElement("div");
+        div.className = "polaroid";
         div.innerHTML = `
-          <div class="foto-usuario">${foto.profiles?.username || 'Desconhecido'}</div>
-          <img src="${foto.url}">
-          ${usuarioAtual && foto.user_id === usuarioAtual.id
-            ? `<button class="botao-deletar" onclick="deletarFoto('${foto.id}', '${foto.url}')">Deletar</button>`
-            : ''}
+          <div class="username">${item.profiles?.username || "Usuário"}</div>
+          <img src="${item.url}" alt="Foto">
+          <div class="description">${item.descricao || ""}</div>
+          ${item.user_id === currentUserId ? `<button class="delete-btn" onclick="deleteImage(${item.id})">X</button>` : ""}
         `;
-        document.getElementById('galeria').appendChild(div);
+        gallery.appendChild(div);
       });
-
-      if (fotos.length === fotosPorPagina) {
-        page++;
-        document.getElementById('carregarMais').style.display = 'block';
-      } else {
-        document.getElementById('carregarMais').style.display = 'none';
-      }
     }
 
-    async function deletarFoto(id, url) {
-      if (!confirm("Tem certeza que deseja apagar esta foto?")) return;
-      const nome = url.split('/').pop();
+    async function deleteImage(id) {
+      if (!confirm("Tem certeza que deseja excluir esta imagem?")) return;
 
-      await supabase.from('fotos').delete().eq('id', id);
-      await supabase.storage.from('fotos').remove([nome]);
-      document.getElementById('galeria').innerHTML = '';
-      page = 0;
+      const { error } = await supabase.from("fotos").delete().eq("id", id).eq("user_id", currentUserId);
+      if (error) return alert("Erro ao excluir: " + error.message);
       loadGallery();
     }
-
-    window.onload = loadGallery;
   </script>
 </body>
 </html>
