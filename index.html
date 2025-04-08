@@ -4,184 +4,193 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>KodacView</title>
-  <link rel="icon" href="https://qewcnffjcrtqwutjymfd.supabase.co/storage/v1/object/public/fotos/icone.png" />
+  <link rel="icon" href="https://qewcnffjcrtqwutjymfd.supabase.co/storage/v1/object/public/fotos/icone.png" type="image/png">
   <style>
     body {
+      background-color: #f8f1e7;
+      font-family: 'Arial', sans-serif;
       margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #fdf6e3;
-      color: #333;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
       padding: 1rem;
+      color: #333;
     }
-
     h1 {
-      margin-bottom: 1rem;
-    }
-
-    .form {
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-      margin-bottom: 2rem;
-      width: 100%;
-      max-width: 400px;
-    }
-
-    .galeria {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
-      width: 100%;
-      max-width: 1000px;
-    }
-
-    .foto {
-      background: white;
-      border: 1px solid #ccc;
-      padding: 0.5rem;
       text-align: center;
-      box-shadow: 2px 2px 6px rgba(0,0,0,0.1);
+      color: #a52a2a;
     }
-
+    .form-section {
+      max-width: 400px;
+      margin: auto;
+      margin-bottom: 2rem;
+      background: #fff8f0;
+      padding: 1rem;
+      border-radius: 8px;
+      box-shadow: 0 0 10px #e3d5c3;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin: 0.4rem 0;
+      padding: 0.6rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .galeria {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+    }
+    .foto {
+      width: 180px;
+      background: white;
+      border: 8px solid white;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+      text-align: center;
+      font-size: 0.9rem;
+    }
     .foto img {
       width: 100%;
       height: auto;
-      object-fit: contain;
+      display: block;
     }
-
-    .usuario {
-      font-weight: bold;
-      font-size: 0.9rem;
-      margin-bottom: 0.3rem;
-    }
-
     .descricao {
-      margin-top: 0.3rem;
-      font-size: 0.85rem;
-      color: #666;
-    }
-
-    button {
       padding: 0.5rem;
-      background-color: #f44336;
+      font-style: italic;
+    }
+    .autor {
+      font-weight: bold;
+      padding-top: 0.3rem;
+      color: #a52a2a;
+    }
+    .foto button {
+      background: #d9534f;
       color: white;
       border: none;
       cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #d32f2f;
+      margin: 0.5rem 0;
     }
   </style>
 </head>
 <body>
+
   <h1>KodacView</h1>
 
-  <div class="form">
+  <div class="form-section" id="login-section">
+    <h2>Login</h2>
     <input type="text" id="username" placeholder="Nome de usuário" />
     <input type="password" id="senha" placeholder="Senha" />
     <button onclick="login()">Entrar</button>
+    <p id="login-erro" style="color:red;"></p>
   </div>
 
-  <div class="form" id="uploadForm" style="display:none;">
-    <input type="file" id="fileInput" accept="image/*" />
-    <input type="text" id="descricaoInput" placeholder="Descrição da foto (opcional)" />
-    <button onclick="uploadFoto()">Enviar Foto</button>
+  <div class="form-section" id="upload-section" style="display:none;">
+    <h2>Enviar Foto</h2>
+    <input type="file" id="foto-input" />
+    <textarea id="descricao" placeholder="Descrição da foto (opcional)"></textarea>
+    <button onclick="uploadFoto()">Enviar</button>
   </div>
 
   <div class="galeria" id="galeria"></div>
 
   <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
-    const supabaseUrl = "https://qewcnffjcrtqwutjymfd.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8";
+    const supabaseUrl = 'https://qewcnffjcrtqwutjymfd.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8';
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    let currentUser = null;
+    let usuarioAtual = null;
+    let userIdAtual = null;
 
     async function login() {
-      const username = document.getElementById("username").value.trim();
-      const senha = document.getElementById("senha").value.trim();
-      if (!username || !senha) return alert("Preencha usuário e senha.");
+      const username = document.getElementById('username').value;
+      const senha = document.getElementById('senha').value;
+      const senhaHash = btoa(senha);
 
-      const hash = btoa(senha);
       const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("username", username)
-        .eq("senha_hash", hash)
-        .maybeSingle();
+        .from('profiles')
+        .select('*')
+        .eq('username', username)
+        .eq('senha_hash', senhaHash)
+        .single();
 
-      if (error || !data) return alert("Usuário ou senha inválidos.");
+      if (error || !data) {
+        document.getElementById('login-erro').innerText = 'Usuário ou senha inválidos.';
+        return;
+      }
 
-      currentUser = data;
-      document.getElementById("uploadForm").style.display = "flex";
-      loadFotos();
+      usuarioAtual = data.username;
+      userIdAtual = data.id;
+
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('upload-section').style.display = 'block';
+      carregarGaleria();
     }
 
     async function uploadFoto() {
-      const fileInput = document.getElementById("fileInput");
-      const descricao = document.getElementById("descricaoInput").value.trim();
-      if (!fileInput.files.length) return alert("Selecione uma imagem.");
-
+      const fileInput = document.getElementById('foto-input');
+      const descricao = document.getElementById('descricao').value;
       const file = fileInput.files[0];
-      const fileName = `${Date.now()}-${file.name}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("fotos")
-        .upload(fileName, file);
+      if (!file) return alert('Selecione uma imagem');
 
-      if (uploadError) return alert("Erro ao enviar imagem.");
+      const nomeArquivo = `${Date.now()}-${file.name}`;
 
-      const url = `${supabaseUrl}/storage/v1/object/public/fotos/${fileName}`;
-      const { error: insertError } = await supabase.from("fotos").insert([{
-        url,
-        descricao,
-        user_id: currentUser.id
+      const { error: erroUpload } = await supabase
+        .storage
+        .from('fotos')
+        .upload(nomeArquivo, file);
+
+      if (erroUpload) {
+        alert('Erro ao enviar imagem');
+        return;
+      }
+
+      const urlPublica = `${supabaseUrl}/storage/v1/object/public/fotos/${nomeArquivo}`;
+
+      await supabase.from('fotos').insert([{
+        url: urlPublica,
+        descricao: descricao,
+        user_id: userIdAtual
       }]);
 
-      if (insertError) return alert("Erro ao salvar no banco.");
-      fileInput.value = "";
-      document.getElementById("descricaoInput").value = "";
-      loadFotos();
+      fileInput.value = '';
+      document.getElementById('descricao').value = '';
+      carregarGaleria();
     }
 
-    async function loadFotos() {
-      const { data: fotos, error } = await supabase
-        .from("fotos")
-        .select("id, url, descricao, user_id, profiles(username)")
-        .order("id", { ascending: false });
+    async function deletarFoto(url) {
+      const nome = url.split('/').pop();
 
-      if (error) return alert("Erro ao carregar galeria.");
+      await supabase.storage.from('fotos').remove([nome]);
+      await supabase.from('fotos').delete().eq('url', url).eq('user_id', userIdAtual);
+      carregarGaleria();
+    }
 
-      const galeria = document.getElementById("galeria");
-      galeria.innerHTML = "";
+    async function carregarGaleria() {
+      const { data: fotos } = await supabase
+        .from('fotos')
+        .select('url, descricao, user_id, profiles(username)')
+        .order('id', { ascending: false });
 
-      fotos.forEach((foto) => {
-        const div = document.createElement("div");
-        div.className = "foto";
-        const usuario = foto.profiles?.username || "Desconhecido";
+      const galeria = document.getElementById('galeria');
+      galeria.innerHTML = '';
+
+      fotos.forEach(foto => {
+        const div = document.createElement('div');
+        div.className = 'foto';
         div.innerHTML = `
-          <div class="usuario">@${usuario}</div>
-          <img src="${foto.url}" alt="Foto" />
-          ${foto.descricao ? `<div class="descricao">${foto.descricao}</div>` : ""}
-          ${currentUser && currentUser.id === foto.user_id
-            ? `<button onclick="deletarFoto(${foto.id})">Deletar</button>`
-            : ""}
+          <div class="autor">${foto.profiles?.username || 'Anônimo'}</div>
+          <img src="${foto.url}" />
+          <div class="descricao">${foto.descricao || ''}</div>
+          ${foto.user_id === userIdAtual ? `<button onclick="deletarFoto('${foto.url}')">Excluir</button>` : ''}
         `;
         galeria.appendChild(div);
       });
     }
 
-    async function deletarFoto(id) {
-      if (!confirm("Tem certeza que deseja deletar?")) return;
-      const { error } = await supabase.from("fotos").delete().eq("id", id);
-      if (error) return alert("Erro ao deletar.");
-      loadFotos();
-    }
+    // Tornar as funções globais
+    window.login = login;
+    window.uploadFoto = uploadFoto;
+    window.deletarFoto = deletarFoto;
   </script>
 </body>
 </html>
