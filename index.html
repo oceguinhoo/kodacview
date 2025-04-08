@@ -50,7 +50,7 @@
       display: none;
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5/+esm"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.5/dist/supabase.min.js"></script>
 </head>
 <body>
   <h1>KodacView</h1>
@@ -80,8 +80,8 @@
     <button onclick="carregarMais()">Carregar mais</button>
   </div>
 
-  <script type="module">
-    const supabase = supabasejs.createClient(
+  <script>
+    const supabase = supabase.createClient(
       'https://qewcnffjcrtqwutjymfd.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8'
     );
@@ -90,7 +90,7 @@
     let pagina = 0;
     const porPagina = 6;
 
-    window.cadastrar = async function () {
+    async function cadastrar() {
       const username = document.getElementById('cadastroUsername').value.trim();
       const senha = document.getElementById('cadastroSenha').value.trim();
       if (!username || !senha) return alert("Preencha todos os campos!");
@@ -104,7 +104,7 @@
       alert("Usuário cadastrado com sucesso!");
     }
 
-    window.login = async function () {
+    async function login() {
       const username = document.getElementById('loginUsername').value.trim();
       const senha = document.getElementById('loginSenha').value.trim();
       const senhaHash = btoa(senha);
@@ -123,7 +123,7 @@
       alert("Bem-vindo, " + usuarioLogado.username + "!");
     }
 
-    window.uploadFoto = async function () {
+    async function uploadFoto() {
       const fileInput = document.getElementById('uploadFile');
       const file = fileInput.files[0];
       const descricao = document.getElementById('descricao').value;
@@ -150,7 +150,7 @@
       carregarFotos(true);
     }
 
-    window.carregarFotos = async function (reiniciar = false) {
+    async function carregarFotos(reiniciar = false) {
       if (reiniciar) {
         pagina = 0;
         document.getElementById('galeria').innerHTML = '';
@@ -179,7 +179,7 @@
       pagina++;
     }
 
-    window.deletarFoto = async function (id, botao) {
+    async function deletarFoto(id, botao) {
       if (!confirm("Deseja excluir esta foto?")) return;
 
       const { error } = await supabase.from('fotos').delete().eq('id', id);
@@ -188,7 +188,7 @@
       botao.parentElement.remove();
     }
 
-    window.carregarMais = function () {
+    function carregarMais() {
       carregarFotos();
     }
 
