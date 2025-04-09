@@ -1,3 +1,5 @@
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
 const supabase = createClient(
   'https://qewcnffjcrtqwutjymfd.supabase.co',
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFld2NuZmZqY3J0cXd1dGp5bWZkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM5NzI2NzYsImV4cCI6MjA1OTU0ODY3Nn0.XBlNVZ8qmb8ZyMmO9YIWidDJUhdI9b_KBT6YRuVYUq8'
@@ -5,7 +7,7 @@ const supabase = createClient(
 
 let currentUser = null;
 
-async function signup() {
+window.signup = async function () {
   const username = document.getElementById('signup-username').value;
   const password = document.getElementById('signup-password').value;
   const hash = btoa(password);
@@ -21,7 +23,7 @@ async function signup() {
   }
 }
 
-async function login() {
+window.login = async function () {
   const username = document.getElementById('login-username').value;
   const password = document.getElementById('login-password').value;
   const hash = btoa(password);
@@ -43,7 +45,7 @@ async function login() {
   }
 }
 
-async function uploadImage() {
+window.uploadImage = async function () {
   const file = document.getElementById('image-file').files[0];
   const descricao = document.getElementById('image-description').value;
 
