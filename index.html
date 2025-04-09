@@ -4,30 +4,34 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>KodacView</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="icon" type="image/png" href="icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/png" href="favicon.png" />
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script defer src="script.js"></script>
 </head>
 <body>
-  <div class="container">
+  <header>
     <h1>KodacView</h1>
+  </header>
 
-    <div class="auth-box">
-      <input type="text" id="username" placeholder="Nome de usuário">
-      <input type="password" id="senha" placeholder="Senha">
+  <main>
+    <div id="auth">
+      <input type="text" id="username" placeholder="Nome de usuário" />
+      <input type="password" id="password" placeholder="Senha" />
       <button onclick="login()">Entrar</button>
-      <button onclick="cadastro()">Cadastrar</button>
+      <button onclick="register()">Cadastrar</button>
     </div>
 
-    <div class="upload-box" id="uploadBox" style="display: none;">
-      <input type="file" id="fileInput" accept="image/*">
-      <input type="text" id="descricaoInput" placeholder="Descrição (opcional)">
-      <button onclick="uploadFoto()">Enviar Foto</button>
+    <div id="upload" style="display: none;">
+      <p id="welcome"></p>
+      <input type="file" id="photoInput" accept="image/*" />
+      <input type="text" id="descricaoInput" placeholder="Descrição da foto (opcional)" />
+      <button onclick="uploadPhoto()">Enviar</button>
       <button onclick="logout()">Sair</button>
     </div>
 
     <div id="galeria" class="galeria"></div>
-    <button id="carregarMais" style="display:none" onclick="loadGaleria()">Carregar Mais</button>
-  </div>
+    <button id="loadMoreBtn" onclick="loadMore()">Carregar mais</button>
+  </main>
 </body>
 </html>
